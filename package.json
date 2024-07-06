@@ -1,0 +1,17 @@
+{
+  "name": "tool-schema-minifier",
+  "version": "0.0.0",
+  "description": "Measure tool schema size and identify safe descriptions that can be compressed.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edilec/tool-schema-minifier"
+  }
+}
