@@ -1,0 +1,64 @@
+# Changelog
+
+All notable changes to this project are recorded here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
+[semantic versioning](https://semver.org/spec/v2.0.0.html).
+
+Rule ids are part of the public interface: renaming or removing one is a
+breaking change and is recorded here.
+
+## [Unreleased]
+
+## [0.1.0]
+
+### Added
+
+- `minifyTools`, `minifyToolFile`, `verifyCandidate` and `verifyToolFiles`:
+  compress a tool-definition document, or check a compressed copy produced
+  elsewhere against its original.
+- A semantic equivalence gate that runs **before** any compression is accepted.
+  The compressor and the comparison are separate code with separate keyword
+  tables, so a mistake in one is caught by the other. A tool whose copy differs
+  keeps its original definition and the run fails.
+- Byte-for-byte retention of every description that governs an approval, where
+  protection comes from `x-approval` / `x-safety-critical` on the node or the
+  tool, from `--protect-tool`, or from a frozen marker list documented in
+  `docs/compression-rules.md`.
+- Position-aware transforms: `title`, `$comment`, `example` and `examples` are
+  annotations in a schema position and parameter names inside `properties`,
+  `patternProperties`, `$defs`, `definitions` and `dependentSchemas`. A
+  parameter named after an annotation keyword is never deleted.
+- Verbatim preservation of any keyword this tool does not recognise, and of
+  everything under it: an unrecognised keyword may be an applicator.
+- A declared token estimator with no vocabulary, documented in
+  `docs/token-estimate.md`, reported alongside exact byte counts. A compression
+  that does not lower the estimate is refused, so a copy is never larger than
+  its input.
+- `tool-schema-minifier` command line interface with `minify` and `verify`,
+  `--tools`, `--candidate`, `--out`, `--drop-annotations`, `--protect-tool`,
+  `--config`, `--human`, `--help` and the six documented limit flags.
+- Fifty-two rules with severities pinned in one frozen table and behaviourally
+  in `test/severity-behaviour.test.mjs`, which drives every rule through the
+  real command line and asserts the exit code; twenty-four of them make the run
+  `incomplete`.
+- Six explicit limits -- bytes, tools, nodes, depth, description characters and
+  milliseconds -- each enforced, each wired to a flag and to `--config`, and
+  each reported by name. Nothing is truncated to fit.
+- A compressed copy is written only for a run that passes, never over the input
+  document, and never over a hard or symbolic link to it: the destination is
+  compared by device and inode rather than by path text.
+- U+2028 and U+2029 are escaped when the copy is serialised, so a description
+  carrying one cannot break a JavaScript consumer that embeds it.
+- Control, C1 and bidi characters are stripped from every document-derived
+  string on its way into a report -- keyword names and parameter names included,
+  not only excerpts.
+- `parseFailureDetail`, exported, which describes a JSON parse failure without
+  reproducing the document V8 quotes back in its own message.
+
+### Notes
+
+- The report envelope is exactly the one in the Edilec report contract, and
+  `summary` carries integers only. The run mode reaches a person through the
+  human summary and stderr, and a caller through the return value.
+- Ordering is by UTF-16 code unit everywhere, never by `localeCompare` or
+  `Intl.Collator`.
