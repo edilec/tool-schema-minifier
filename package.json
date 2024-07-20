@@ -1,17 +1,53 @@
 {
   "name": "tool-schema-minifier",
-  "version": "0.0.0",
-  "description": "Measure tool schema size and identify safe descriptions that can be compressed.",
+  "version": "0.1.0",
+  "description": "Compress a tool-definition document and report the token difference, after checking that required fields, enums, constraints and approval-governing descriptions survived unchanged.",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test"
+    "lint": "node --check src/text.mjs && node --check src/tokens.mjs && node --check src/schema.mjs && node --check src/document.mjs && node --check src/index.mjs && node --check bin/tool-schema-minifier.mjs && node --check test/cli.test.mjs && node --check test/determinism.test.mjs && node --check test/equivalence.test.mjs && node --check test/incompleteness.test.mjs && node --check test/limits.test.mjs && node --check test/minify.test.mjs && node --check test/ordering.test.mjs && node --check test/parse-failure.test.mjs && node --check test/sanitising.test.mjs && node --check test/severity-behaviour.test.mjs && node --check test/text.test.mjs && node --check test/tokens.test.mjs",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/**",
+    "example": "node bin/tool-schema-minifier.mjs minify --tools examples/tools.json --out build/tools.min.json --drop-annotations --human",
+    "example:refusal": "node bin/tool-schema-minifier.mjs verify --tools examples/tools.json --candidate examples/compressed-broken.json --human; test $? -eq 1",
+    "pack:check": "npm pack --dry-run",
+    "check": "npm run lint && npm test && npm run example && npm run example:refusal && npm run pack:check"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/edilec/tool-schema-minifier"
-  }
+    "url": "git+https://github.com/edilec/tool-schema-minifier.git"
+  },
+  "bin": {
+    "tool-schema-minifier": "./bin/tool-schema-minifier.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "examples",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "json-schema",
+    "mcp",
+    "tool-schema",
+    "minify",
+    "tokens",
+    "context-window",
+    "agent",
+    "cli"
+  ],
+  "author": "Edilec Private Limited",
+  "bugs": {
+    "url": "https://github.com/edilec/tool-schema-minifier/issues"
+  },
+  "homepage": "https://github.com/edilec/tool-schema-minifier#readme"
 }
