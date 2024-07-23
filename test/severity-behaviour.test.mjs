@@ -193,6 +193,8 @@ async function verifyArgs(mutateOriginal, mutateCandidate) {
   return ['verify', '--tools', await writeDocument(original), '--candidate', await writeDocument(candidate)]
 }
 
+const WHOLE_LIST_RULES = new Set(['tool-missing-from-candidate', 'tool-added-in-candidate'])
+
 for (const [ruleId, expectedExit, expectedStatus, buildArgs] of CASES) {
   test(`${ruleId} exits ${expectedExit} with status ${expectedStatus}`, async () => {
     const { code, stdout } = await runCli(await buildArgs())
@@ -203,6 +205,14 @@ for (const [ruleId, expectedExit, expectedStatus, buildArgs] of CASES) {
     )
     assert.equal(report.status, expectedStatus)
     assert.equal(code, expectedExit)
+    if (expectedExit === 1 && !WHOLE_LIST_RULES.has(ruleId)) {
+      // Severity-independent: a tool is counted equivalent only when its
+      // comparison found nothing. This assertion survives an edit to the
+      // severity table and turns red if the rule stops being emitted at all.
+      // The two whole-list rules are excluded because they are about a tool
+      // that is present or absent rather than about a tool that was compared.
+      assert.equal(report.summary.toolsCompressed, 0)
+    }
     assert.equal(report.findings.find((finding) => finding.ruleId === ruleId).severity, RULE_SEVERITY[ruleId])
   })
 }

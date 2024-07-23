@@ -28,6 +28,25 @@ test('a document that reads "at position 1" is not sliced back out', () => {
   assert.ok(!detail.includes('"'), detail)
 })
 
+test('the quoting shape is recognised before the offset, not after it', () => {
+  // Not only "nothing leaked": WHICH branch answered. The backstop catches an
+  // offset-first helper too, but it answers the generic sentence and the
+  // diagnostic is gone. Pinning the exact sentence is what makes the ordering
+  // itself observable, so swapping the two branches turns this red rather than
+  // silently degrading every message about a document containing that phrase.
+  assert.equal(detailFor('at position 1'), "unexpected token 'a' at the start of the document")
+})
+
+test('the backstop catches a wording whose branches would have leaked', () => {
+  // A shape neither branch recognises as quoting, but where the offset branch
+  // keeps a prefix that still carries the quoted span. Only the closing double
+  // quote check stops this one, which is why it is not redundant.
+  const invented = { message: `Bad value "${CANARY}" in JSON at position 12` }
+  const detail = parseFailureDetail(invented)
+  assert.ok(!detail.includes(CANARY), detail)
+  assert.equal(detail, 'the document could not be parsed as JSON')
+})
+
 test('a document that is only a credential is never reproduced', () => {
   const detail = detailFor(CANARY)
   assert.ok(!detail.includes(CANARY), detail)
@@ -41,11 +60,14 @@ test('a long document with a sensitive prefix is never reproduced', () => {
 })
 
 test('a quoted span containing a newline is still recognised', () => {
-  // Without the `s` flag the quoting pattern does not match across the newline,
-  // the helper falls through to the offset branch, and the document survives.
+  // Without the `s` flag the quoting pattern does not match across the newline.
+  // The backstop still stops the leak, so "nothing leaked" does not pin the
+  // flag -- what pins it is the sentence the quoting branch produces, which a
+  // non-dotAll pattern cannot reach.
   const detail = detailFor(`${CANARY}\n${CANARY}`)
   assert.ok(!detail.includes(CANARY), detail)
   assert.ok(!detail.includes('"'), detail)
+  assert.equal(detailFor('a\nb'), "unexpected token 'a' at the start of the document")
 })
 
 test('the genuinely safe form still reports position, line and column', () => {
