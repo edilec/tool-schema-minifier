@@ -7,7 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "lint": "node --check src/text.mjs && node --check src/tokens.mjs && node --check src/schema.mjs && node --check src/document.mjs && node --check src/index.mjs && node --check bin/tool-schema-minifier.mjs && node --check test/cli.test.mjs && node --check test/determinism.test.mjs && node --check test/equivalence.test.mjs && node --check test/incompleteness.test.mjs && node --check test/limits.test.mjs && node --check test/minify.test.mjs && node --check test/ordering.test.mjs && node --check test/parse-failure.test.mjs && node --check test/sanitising.test.mjs && node --check test/severity-behaviour.test.mjs && node --check test/text.test.mjs && node --check test/tokens.test.mjs",
+    "lint": "node --check src/text.mjs && node --check src/tokens.mjs && node --check src/destination.mjs && node --check src/schema.mjs && node --check src/document.mjs && node --check src/index.mjs && node --check bin/tool-schema-minifier.mjs && node --check test/cli.test.mjs && node --check test/destination.test.mjs && node --check test/determinism.test.mjs && node --check test/equivalence.test.mjs && node --check test/incompleteness.test.mjs && node --check test/limits.test.mjs && node --check test/minify.test.mjs && node --check test/ordering.test.mjs && node --check test/parse-failure.test.mjs && node --check test/sanitising.test.mjs && node --check test/severity-behaviour.test.mjs && node --check test/text.test.mjs && node --check test/tokens.test.mjs",
     "test": "node --test",
     "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/**",
     "example": "node bin/tool-schema-minifier.mjs minify --tools examples/tools.json --out build/tools.min.json --drop-annotations --human",

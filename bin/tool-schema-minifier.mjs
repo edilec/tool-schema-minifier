@@ -6,8 +6,8 @@ import { performance } from 'node:perf_hooks'
 import {
   formatReport,
   minifyToolFile,
+  prepareDestination,
   readConfigFile,
-  resolveOutputDestination,
   verifyToolFiles,
   writeArtifactFile,
 } from '../src/index.mjs'
@@ -44,9 +44,14 @@ Commands:
 Options:
   --tools FILE                 The tool-definition document (required)
   --candidate FILE             The compressed copy to check (verify only)
-  --out FILE                   Write the compressed copy here (minify only).
-                               Written only when the run passes, and never over
-                               the input document.
+  --out FILE                   Write the compressed copy here (minify only),
+                               as compact JSON. Written only when the run
+                               passes. The destination's directory is created if
+                               it is missing. A symbolic link, a parent that
+                               resolves elsewhere, anything that is not a
+                               regular file, and any spelling of an input
+                               document -- including a hard link to it -- are
+                               refused before anything is opened.
   --drop-annotations           Also remove title/$comment/example/examples
   --protect-tool NAME          Treat every description in this tool as
                                approval-governing. May be repeated.
@@ -212,9 +217,9 @@ async function main(argv) {
   let destination = null
   if (options.out !== null) {
     try {
-      destination = await resolveOutputDestination(options.tools, options.out)
+      destination = await prepareDestination(options.out, { inputs: [options.tools], label: '--out' })
     } catch (error) {
-      process.stderr.write(`--out is not usable: ${error.message}\n`)
+      process.stderr.write(`${error.message}\n`)
       return 2
     }
   }
@@ -254,7 +259,7 @@ async function main(argv) {
     if (report.status === 'pass') {
       try {
         await writeArtifactFile(destination, result.document)
-        process.stderr.write(`compressed copy written: ${destination.path}\n`)
+        process.stderr.write(`compressed copy written: ${destination}\n`)
       } catch (error) {
         process.stderr.write(`the compressed copy could not be written: ${error.code ?? error.message}\n`)
         return 2

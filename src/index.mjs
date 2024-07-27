@@ -24,10 +24,11 @@
  * caller injects for its own time budget.
  */
 
-import { mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
 
+import { DestinationError, assertWritableDestination } from './destination.mjs'
 import {
   DEFAULT_LIMITS,
   DOCUMENT_SCHEMA_VERSION,
@@ -66,6 +67,7 @@ export const TOOL_ID = 'tool-schema-minifier'
 export const REPORT_SCHEMA_VERSION = '1'
 
 export { DEFAULT_LIMITS, DOCUMENT_SCHEMA_VERSION, validateLimits }
+export { DestinationError, assertWritableDestination } from './destination.mjs'
 export { APPROVAL_MARKERS, isApprovalDescription } from './schema.mjs'
 export { estimateTokens } from './tokens.mjs'
 // Re-exported so the catalog leak probe can import and exercise it directly; a
@@ -850,71 +852,45 @@ export async function readConfigFile(path) {
   return overrides
 }
 
-const ANCESTOR_PROBE_LIMIT = 64
-
 /**
- * Resolve where the compressed copy may be written, and refuse the input.
+ * Settle where the compressed copy may be written, before any document is read.
  *
- * The copy is derived from the document; writing it over that document destroys
- * the only thing that could prove the copy equivalent. Comparison is by device
- * and inode rather than by path text, so a symbolic link, a hard link and a
- * second spelling of the same file are all refused. Lexical path checks are not
- * confinement: a planted link has already carried a tool in this catalog out of
- * its own root.
+ * The destination's directory is created first, because a copy written into a
+ * directory this run made is ordinary and refusing it would only push people
+ * into `mkdir && run`. The guard then runs over the real destination: a
+ * symbolic link at it, a parent that resolves somewhere else, a destination
+ * that is not a regular file, and a hard link to an input are each refused
+ * before anything is opened. See `src/destination.mjs` for why one check does
+ * not cover the others.
+ *
+ * A refused destination is a configuration error: exit 2 with an empty stdout.
+ * A missing INPUT is not refused here -- that is a fact about the input, and it
+ * belongs in an `incomplete` report on stdout naming the document that was not
+ * read.
  */
-export async function resolveOutputDestination(inputPath, outputPath) {
-  const input = resolve(inputPath)
-  const output = resolve(outputPath)
-  let inputStat
+export async function prepareDestination(outputPath, options = {}) {
+  const { inputs = [], root = null, label = '--out' } = options
+  const target = resolve(outputPath)
   try {
-    inputStat = await stat(input)
+    await mkdir(dirname(target), { recursive: true })
   } catch (error) {
-    throw new TypeError(`the input could not be inspected: ${String(error.code ?? error.message)}`)
+    throw new DestinationError(`${label} names a directory that could not be created: ${error.code ?? error.message}`)
   }
-  let outputStat = null
-  try {
-    outputStat = await stat(output)
-  } catch {
-    outputStat = null
-  }
-  if (outputStat !== null) {
-    if (outputStat.isDirectory()) throw new TypeError('the destination is a directory')
-    if (outputStat.dev === inputStat.dev && outputStat.ino === inputStat.ino) {
-      throw new TypeError('the destination is the input document itself')
-    }
-  }
-  /**
-   * The destination need not exist yet, so the real path of the nearest
-   * ancestor that does is resolved and returned. Resolving the REAL path is the
-   * point: a lexical check that rejects `..` is not confinement, and a planted
-   * symbolic link has already carried a tool in this catalog out of its own
-   * root. The dev/inode comparison above is what actually refuses the input
-   * document, including through a hard link or a second spelling of the path.
-   */
-  let probe = dirname(output)
-  for (let step = 0; step < ANCESTOR_PROBE_LIMIT; step += 1) {
-    const real = await realpath(probe).catch(() => null)
-    if (real !== null) return { path: output, directory: probe, real }
-    const parent = dirname(probe)
-    if (parent === probe) break
-    probe = parent
-  }
-  throw new TypeError('the destination directory could not be resolved')
+  return assertWritableDestination(target, { inputs, root, label })
 }
 
 /**
  * Write the compressed copy.
  *
- * Two lines matter here. The trailing newline makes the file a well-behaved
- * text file, and `escapeJsSeparators` turns U+2028 and U+2029 into their JSON
- * escapes so a description carrying one cannot break a JavaScript module that
- * embeds the copy. Neither changes a single JSON value.
+ * `escapeJsSeparators` turns U+2028 and U+2029 into their JSON escapes so a
+ * description carrying one cannot break a JavaScript module that embeds the
+ * copy. It changes no JSON value.
  */
 export async function writeArtifactFile(destination, document) {
-  await mkdir(dirname(destination.path), { recursive: true })
+  const path = typeof destination === 'string' ? destination : destination.path
   const json = escapeJsSeparators(JSON.stringify(document, null, 2))
-  await writeFile(destination.path, `${json}\n`, 'utf8')
-  return destination.path
+  await writeFile(path, `${json}\n`, 'utf8')
+  return path
 }
 
 const STATUS_LINE = Object.freeze({

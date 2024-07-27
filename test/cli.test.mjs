@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { access, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import test, { after } from 'node:test'
@@ -114,25 +114,12 @@ test('the compressed copy is written only for a run that passes', async () => {
   assert.match(incomplete.stderr, /no compressed copy was written/)
 })
 
-test('the destination may not be the input document, even through a link', async () => {
-  const directory = await scratch()
-  const input = join(directory, 'tools.json')
-  await writeFile(input, await readFile(EXAMPLE, 'utf8'), 'utf8')
-
-  const direct = await runCli(['minify', '--tools', input, '--out', input])
-  assert.equal(direct.code, 2)
-  assert.equal(direct.stdout, '')
-  assert.match(direct.stderr, /the input document itself/)
-
-  // A lexical path check passes here: the two spellings share no text. Only
-  // comparing the real file -- device and inode -- refuses it.
-  const link = join(directory, 'alias.json')
-  await symlink(input, link)
-  const throughLink = await runCli(['minify', '--tools', input, '--out', link])
-  assert.equal(throughLink.code, 2)
-  assert.equal(throughLink.stdout, '')
-  assert.match(throughLink.stderr, /the input document itself/)
-})
+/**
+ * Where the copy may be written is pinned in `test/destination.test.mjs`: a
+ * symbolic link at the destination, a parent that resolves elsewhere, a hard
+ * link to an input and a destination that is not a regular file each have a
+ * case there, as do the destinations that must still be allowed.
+ */
 
 test('a failing verification exits 1 and still writes its report', async () => {
   const { code, stdout } = await runCli(['verify', '--tools', EXAMPLE, '--candidate', BROKEN])

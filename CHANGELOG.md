@@ -9,6 +9,27 @@ breaking change and is recorded here.
 
 ## [Unreleased]
 
+### Fixed
+
+- `--out` no longer writes through a **symbolic link at the destination**. The
+  link was resolved and followed, so a run could destroy an unrelated file and
+  exit `0` reporting `compressed copy written`. The destination is now inspected
+  with `lstat` and refused on sight, before anything is opened, and the parent
+  directory is resolved rather than compared as text. A hard link to an input
+  was already refused and still is. `test/destination.test.mjs` has a case per
+  hole and a case per legitimate destination, and each check is proved to bite
+  by removing it.
+- A missing input document no longer reports a broken `--out`. The destination
+  check stat'ed the input, so `minify --tools absent.json --out copy.json`
+  exited `2` with an **empty stdout** blaming `--out`; the contract requires an
+  input that could not be read to produce an `incomplete` report on stdout
+  naming that input, which is what it now does.
+
+### Changed
+
+- The directory named by `--out` is created if it is missing, before the
+  destination is checked, so the check runs against the real parent.
+
 ## [0.1.0]
 
 ### Added
