@@ -11,6 +11,16 @@ breaking change and is recorded here.
 
 ### Fixed
 
+- Equivalence is reflexive again. `compareDescription` asked only whether the
+  CANDIDATE description was empty, so any document carrying `"description": ""`
+  or a whitespace-only description -- which a real MCP `tools/list` response
+  does -- was declared not equivalent to a byte-identical copy of itself:
+  `verify` exited `1` on two files `cmp` calls identical, `minify` refused to
+  compress and told the operator to report a compressor defect that does not
+  exist. "Emptied" is a claim about what the copy did, so the original now
+  decides it. A description the copy really did empty is still
+  `description-removed`.
+
 - `--out` no longer writes through a **symbolic link at the destination**. The
   link was resolved and followed, so a run could destroy an unrelated file and
   exit `0` reporting `compressed copy written`. The destination is now inspected

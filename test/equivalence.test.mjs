@@ -110,6 +110,39 @@ test('an annotation may be dropped and an ordinary description rewritten', () =>
   assert.equal(report.status, 'pass', JSON.stringify(ruleIds(report)))
 })
 
+/**
+ * Reflexivity: a document is equivalent to itself.
+ *
+ * `compareDescription` asked only whether the CANDIDATE description was empty,
+ * so a document carrying `"description": ""` -- which a real `tools/list`
+ * response does -- was declared not equivalent to a byte-identical copy of
+ * itself, and `minify` refused to compress it at all. The finding said the copy
+ * had emptied a description the copy had never touched.
+ */
+for (const [name, value] of [['an empty', ''], ['a whitespace-only', '   ']]) {
+  test(`${name} description is equivalent to itself`, () => {
+    const document = {
+      schemaVersion: '1',
+      tools: [{
+        name: 'act',
+        description: 'Do a thing with some records here.',
+        inputSchema: { type: 'object', properties: { id: { type: 'string', description: value } }, required: ['id'] },
+      }],
+    }
+    const bytes = encode(document)
+    const report = verifyCandidate({ bytes, candidateBytes: bytes, source: 'tools.json' }).report
+    assert.equal(report.status, 'pass', JSON.stringify(ruleIds(report)))
+    assert.deepEqual(report.findings, [])
+    assert.equal(report.summary.toolsCompressed, 1)
+
+    // And the same document compresses, rather than being refused by a gate
+    // reporting a defect in the compressor that does not exist.
+    const minified = minifyTools({ bytes, source: 'tools.json' })
+    assert.equal(minified.report.status, 'pass', JSON.stringify(ruleIds(minified.report)))
+    assert.ok(ruleIds(minified.report).every((id) => id !== 'equivalence-not-proven'))
+  })
+}
+
 test('a tool the original does not declare is refused', () => {
   const candidate = candidateWith(() => {})
   candidate.tools.push({ name: 'sneak', description: 'An extra tool.', inputSchema: { type: 'object', properties: {} } })

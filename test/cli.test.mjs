@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { access, mkdtemp, readFile, rm } from 'node:fs/promises'
+import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import test, { after } from 'node:test'
@@ -120,6 +120,30 @@ test('the compressed copy is written only for a run that passes', async () => {
  * link to an input and a destination that is not a regular file each have a
  * case there, as do the destinations that must still be allowed.
  */
+
+test('two byte-identical documents verify as equivalent', async () => {
+  // Reflexivity through the real command line. An empty description made this
+  // exit 1 with "the compressed copy of \"act\" is not equivalent to the
+  // original", on two files `cmp` calls identical.
+  const directory = await scratch()
+  const document = JSON.stringify({
+    schemaVersion: '1',
+    tools: [{
+      name: 'act',
+      description: 'Do a thing with some records here.',
+      inputSchema: { type: 'object', properties: { id: { type: 'string', description: '' } }, required: ['id'] },
+    }],
+  })
+  const original = join(directory, 'identical-a.json')
+  const copy = join(directory, 'identical-b.json')
+  await writeFile(original, document, 'utf8')
+  await writeFile(copy, document, 'utf8')
+
+  const { code, stdout } = await runCli(['verify', '--tools', original, '--candidate', copy])
+  const report = JSON.parse(stdout)
+  assert.equal(report.status, 'pass', JSON.stringify(report.findings))
+  assert.equal(code, 0)
+})
 
 test('a failing verification exits 1 and still writes its report', async () => {
   const { code, stdout } = await runCli(['verify', '--tools', EXAMPLE, '--candidate', BROKEN])

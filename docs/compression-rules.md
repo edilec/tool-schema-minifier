@@ -83,7 +83,7 @@ each states a fact the run established, so the run fails rather than abstains.
 | `annotation-changed` | An annotation is present in both and differs. Dropping one is allowed; rewriting one is not. |
 | `unknown-keyword-changed` | An unrecognised keyword differs. It may be an applicator, so it is never safe to change. |
 | `unknown-keyword-removed` | An unrecognised keyword is missing from the copy. |
-| `description-removed` | An unprotected description is missing or empty. Descriptions may be shortened, never dropped. |
+| `description-removed` | An unprotected description is missing from the copy, is not a string, or was emptied by it. Emptied means the original held text and the copy does not: a description that was already empty in the original is not something the copy did, and reporting it made two identical documents non-equivalent. |
 | `safety-description-changed` | A description governing an approval is not byte-identical. |
 | `safety-description-removed` | A description governing an approval is missing. |
 | `tool-entry-changed` | A tool entry key outside the schema differs, is missing, or was added. |

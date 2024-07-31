@@ -545,7 +545,26 @@ export function compareDescription(left, right, here, state, record) {
     }
     return
   }
-  if (typeof right !== 'string' || right.trim() === '') {
+  if (typeof right !== 'string') {
+    record({
+      ruleId: 'description-removed',
+      pointer: here,
+      message: 'The description is not a string in the compressed copy; descriptions may be shortened but never removed.',
+      suggestion: 'Restore a shortened form of the description as a string.',
+    })
+    return
+  }
+  /**
+   * "Emptied" is a claim about what the COPY did, so what the original held
+   * decides it.
+   *
+   * Asking only whether the copy is empty made this relation non-reflexive:
+   * two byte-identical documents were declared not equivalent, and `minify`
+   * refused to compress at all, whenever any description was `""` or
+   * whitespace -- which a real `tools/list` response carries. The finding also
+   * said the copy had emptied a description the copy had never touched.
+   */
+  if (right.trim() === '' && left.trim() !== '') {
     record({
       ruleId: 'description-removed',
       pointer: here,
