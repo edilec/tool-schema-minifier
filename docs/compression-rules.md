@@ -84,6 +84,7 @@ each states a fact the run established, so the run fails rather than abstains.
 | `unknown-keyword-changed` | An unrecognised keyword differs. It may be an applicator, so it is never safe to change. |
 | `unknown-keyword-removed` | An unrecognised keyword is missing from the copy. |
 | `description-removed` | An unprotected description is missing from the copy, is not a string, or was emptied by it. Emptied means the original held text and the copy does not: a description that was already empty in the original is not something the copy did, and reporting it made two identical documents non-equivalent. |
+| `description-rewritten` | An unprotected description in the copy is different text rather than a shorter form of the original. A copy may collapse runs of whitespace and cut the tail; it may not substitute content. |
 | `safety-description-changed` | A description governing an approval is not byte-identical. |
 | `safety-description-removed` | A description governing an approval is missing. |
 | `tool-entry-changed` | A tool entry key outside the schema differs, is missing, or was added. |

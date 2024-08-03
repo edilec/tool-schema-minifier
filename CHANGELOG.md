@@ -9,6 +9,17 @@ breaking change and is recorded here.
 
 ## [Unreleased]
 
+### Added
+
+- `description-rewritten` (error): an unprotected description in a copy that is
+  different text rather than a shorter form of the original. `verify` used to
+  require only that it be a non-empty string, so a copy could substitute
+  arbitrary caller-chosen text for any description the marker list did not
+  protect -- a tool's own top-level description included -- and still be
+  reported equivalent with exit `0` and no findings at all. The permitted forms
+  are now exactly the two the README's table lists: whitespace collapsed, and
+  the tail cut with or without the ellipsis this tool writes.
+
 ### Fixed
 
 - Equivalence is reflexive again. `compareDescription` asked only whether the

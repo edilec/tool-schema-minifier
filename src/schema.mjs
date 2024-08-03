@@ -190,9 +190,42 @@ const ELLIPSIS = String.fromCharCode(0x2026)
  * whole tool before and after and rejects a compression that did not save.
  */
 export function compressDescription(text, limit) {
-  const flattened = String(text).replace(/\s+/g, ' ').trim()
+  const flattened = collapseWhitespace(text)
   if (flattened.length <= limit) return { text: flattened, truncated: false }
   return { text: `${flattened.slice(0, Math.max(1, limit - 1))}${ELLIPSIS}`, truncated: true }
+}
+
+/** Runs of whitespace to single spaces, ends trimmed. The only rewrite there is. */
+export function collapseWhitespace(text) {
+  return String(text).replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Is this candidate description a SHORTER FORM of the original, or different
+ * text wearing its place?
+ *
+ * The README's "what may change" table lists exactly two permitted changes to
+ * an unprotected description: runs of whitespace collapsed, and the length cut
+ * at `--max-description-chars`. The comparison used to require only that the
+ * candidate be a non-empty string, so `verify` -- the mode sold as a check on a
+ * copy produced by hand, by a script or by another tool -- accepted any text at
+ * all in place of any description the marker list did not protect, including a
+ * tool's own top-level description, with no finding and exit 0. A description is
+ * what a model reads to decide whether to call a tool and whether to ask a
+ * person first; substituted text there is a different tool.
+ *
+ * Permitted, and nothing else: the original itself, its whitespace-collapsed
+ * form, or a prefix of either -- with or without the ellipsis that marks where
+ * this tool cut. Anything longer, or anything that is not a prefix, is a
+ * rewrite.
+ */
+export function isPermittedShortening(original, candidate) {
+  const body = candidate.endsWith(ELLIPSIS) ? candidate.slice(0, -1) : candidate
+  for (const base of [original, collapseWhitespace(original)]) {
+    if (candidate === base) return true
+    if (candidate.length <= base.length && base.startsWith(body)) return true
+  }
+  return false
 }
 
 /**
@@ -570,6 +603,15 @@ export function compareDescription(left, right, here, state, record) {
       pointer: here,
       message: 'A description was emptied in the compressed copy; descriptions may be shortened but never removed.',
       suggestion: 'Restore a shortened form of the description.',
+    })
+    return
+  }
+  if (!isPermittedShortening(left, right)) {
+    record({
+      ruleId: 'description-rewritten',
+      pointer: here,
+      message: 'The description in the compressed copy is different text, not a shorter form of the original; a copy may collapse whitespace and cut the tail, and nothing else.',
+      suggestion: 'Shorten the original description instead of replacing it, or produce the copy with this tool minify command.',
     })
   }
 }

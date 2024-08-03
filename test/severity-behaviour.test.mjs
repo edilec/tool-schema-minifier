@@ -142,6 +142,7 @@ const CASES = [
   ['structure-changed', 1, 'fail', async () => verifyArgs((entry) => { entry.inputSchema.properties.mode = true })],
   ['keyword-added', 1, 'fail', async () => verifyArgs((entry) => { entry.inputSchema.minProperties = 1 })],
   ['description-removed', 1, 'fail', async () => verifyArgs((entry) => { delete entry.inputSchema.properties.id.description })],
+  ['description-rewritten', 1, 'fail', async () => verifyArgs((entry) => { entry.inputSchema.properties.id.description = 'Entirely different text.' })],
   ['safety-description-changed', 1, 'fail', async () => verifyArgs((entry) => { entry.inputSchema.properties.confirm.description = 'Set to true.' })],
   ['safety-description-removed', 1, 'fail', async () => verifyArgs((entry) => { delete entry.inputSchema.properties.confirm.description })],
   ['annotation-changed', 1, 'fail', async () => verifyArgs((entry) => { entry.inputSchema.title = 'Input' }, (entry) => { entry.inputSchema.title = 'Other' })],

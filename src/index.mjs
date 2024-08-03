@@ -129,6 +129,7 @@ export const RULE_SEVERITY = Object.freeze({
   'description-malformed': 'error',
   'description-protected': 'info',
   'description-removed': 'error',
+  'description-rewritten': 'error',
   'description-truncated': 'info',
   'enum-changed': 'error',
   'equivalence-not-proven': 'error',

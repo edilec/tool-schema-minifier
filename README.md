@@ -25,7 +25,10 @@ It has two commands:
 - `minify` builds the compressed copy, checks it, and reports the difference.
 - `verify` checks a compressed copy produced somewhere else -- by hand, by a
   script, by another tool -- against the original. The same gate, the same
-  rules.
+  rules. An unprotected description may arrive collapsed or cut short; text
+  substituted for it is `description-rewritten`, because a description is what a
+  model reads to decide whether to call a tool and whether to ask a person
+  first.
 
 Nothing is fetched, no model is called, no network is touched, and the only
 clock is the one the command line injects for its own time budget.
@@ -106,7 +109,7 @@ Tool entry keys this tool understands are `name`, `title`, `description`,
 | May change | Never changes |
 | --- | --- |
 | runs of whitespace inside an unprotected description | `required`, `enum`, `const`, `type` and every other validation keyword |
-| the length of an unprotected description (`--max-description-chars`) | any parameter, including one named `title` or `examples` |
+| the length of an unprotected description (`--max-description-chars`): its tail is cut, never its content substituted | any parameter, including one named `title` or `examples` |
 | `title`, `$comment`, `example`, `examples` in a schema position, with `--drop-annotations` | any description that governs an approval |
 | | any keyword this tool does not recognise, and everything under it |
 | | `default`, `format`, `pattern`, `$ref`, `$defs` and the rest of the vocabulary |
@@ -127,7 +130,7 @@ mechanism.
 
 ## Rules
 
-Fifty-two rules, each with a fixed severity, listed in full in
+Fifty-three rules, each with a fixed severity, listed in full in
 [`docs/compression-rules.md`](./docs/compression-rules.md). The three classes:
 
 | Class | Severity | Status | Exit |
@@ -137,7 +140,7 @@ Fifty-two rules, each with a fixed severity, listed in full in
 | work done as designed -- annotation dropped, description collapsed, description protected | `info` / `warning` | `pass` | 0 |
 
 Severity is not defended by the table alone. `test/severity-behaviour.test.mjs`
-drives **every one of the fifty-two rules** through the real command line over
+drives **every one of the fifty-three rules** through the real command line over
 a real document and asserts the exit code, because three declarations agreeing
 with each other can be edited together and an exit code cannot.
 
