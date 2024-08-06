@@ -40,7 +40,9 @@ construction:
 
 1. **A compression nobody checked is a change nobody reviewed.** The compressor
    and the equivalence check are separate code here, so a mistake in one shows
-   up as a refused copy rather than as a shipped artifact.
+   up as a refused copy rather than as a shipped artifact. `test/gate.test.mjs`
+   proves it by breaking the compressor on purpose -- a guarantee about what
+   happens when other code is wrong cannot be tested with code that is right.
 2. **`title`, `examples`, `example` and `$comment` are annotations *in a schema
    position*.** Inside `properties` the same words are parameter names. A
    minifier that walks the tree deleting keys by name deletes the parameters,

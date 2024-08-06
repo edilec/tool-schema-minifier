@@ -22,6 +22,14 @@ breaking change and is recorded here.
 
 ### Fixed
 
+- The equivalence gate is pinned. `minifyTools` ran `compareToolEntries` over
+  its own output before accepting it, but the call could be deleted outright and
+  every test stayed green -- because a correct compressor gives the gate nothing
+  to catch. `test/gate.test.mjs` copies the tool, makes its compressor
+  position-blind, and asserts that the gate refuses the result: status `fail`,
+  exit 1, `property-removed`, and no artifact on disk. With the gate deleted
+  that same broken compressor exits 0 with status `pass` and writes a copy whose
+  `required` list names a parameter it no longer declares.
 - Equivalence is reflexive again. `compareDescription` asked only whether the
   CANDIDATE description was empty, so any document carrying `"description": ""`
   or a whitespace-only description -- which a real MCP `tools/list` response
