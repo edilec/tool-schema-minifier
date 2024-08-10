@@ -102,7 +102,7 @@ each states a fact the run established, so the run fails rather than abstains.
 | `annotation-dropped` | info | `title`, `$comment`, `example` or `examples` was removed from a schema position, with `--drop-annotations`. |
 | `schema-keyword-unrecognized` | info | A keyword this tool does not know was copied unchanged, and its subtree was not entered. |
 | `tool-key-unrecognized` | info | A tool entry key this tool does not know was copied unchanged. |
-| `compression-rejected-no-saving` | info | The copy did not lower the token estimate, so the original was kept. |
+| `compression-rejected-no-saving` | info | The copy did not lower the token estimate, or would have raised the exact byte count, so the original was kept. Truncation appends an ellipsis -- one character, three bytes -- so at the boundary a shorter description can cost more bytes. |
 | `nothing-compressed` | info | No tool was compressed; the copy is identical to the input. |
 | `description-contains-control` | warning | A description carries a control, bidi or line-separator character that can forge or hide text where the tool list is displayed. The character is reported by class, never echoed raw, and a protected description is still copied unchanged -- this tool does not silently rewrite text it has said it will not touch. |
 

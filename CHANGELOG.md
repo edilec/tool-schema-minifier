@@ -22,6 +22,16 @@ breaking change and is recorded here.
 
 ### Fixed
 
+- The written copy can no longer be larger than the input while the report
+  announces a saving. `bytesBefore` / `bytesAfter` were measured on the compact
+  serialisation and the file was written pretty-printed, so a reported 182 ->
+  170 byte saving put a 366-byte file beside a 214-byte input, and a 4,036,283
+  byte input produced a 4,154,854 byte copy. The copy is now written compact,
+  which is the form those numbers measure.
+- A compression that would raise the exact byte count is refused as well as one
+  that does not lower the token estimate. Truncation appends an ellipsis -- one
+  character, three bytes -- so one character over the budget a copy could cost
+  fewer tokens and more bytes, and be accepted.
 - The equivalence gate is pinned. `minifyTools` ran `compareToolEntries` over
   its own output before accepting it, but the call could be deleted outright and
   every test stayed green -- because a correct compressor gives the gate nothing

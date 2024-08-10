@@ -56,7 +56,7 @@ construction:
 ## Quick start
 
 ```sh
-# Compress, check, and write the copy (only written when the run passes)
+# Compress, check, and write the copy: compact JSON, only when the run passes
 node bin/tool-schema-minifier.mjs minify \
   --tools examples/tools.json \
   --out build/tools.min.json \
@@ -178,10 +178,16 @@ pre-tokenizer with **no vocabulary and no merge table**. See
 
 - It is comparable between two documents measured by this tool.
 - It is **not** any provider's billing count, and must not be used as one.
-- `bytesBefore` and `bytesAfter` are exact.
+- `bytesBefore` and `bytesAfter` are exact, and they describe the file that is
+  actually written: the copy is serialised **compact**, which is the form they
+  are measured on. They count the tool entries, so the file adds the document
+  envelope `{"schemaVersion":"1","tools":[…]}` and the commas between entries.
 
-A compression that does not lower the estimate is refused and the original is
-kept, so a compressed copy is never larger than its input.
+A compression that does not lower the estimate **or that would raise the exact
+byte count** is refused and the original definition is kept, so no entry in a
+copy is larger than the entry it replaces. Both halves are needed: truncation
+appends an ellipsis, one character and three bytes, so one character over the
+budget a copy can cost fewer tokens and more bytes.
 
 ## Exit codes
 

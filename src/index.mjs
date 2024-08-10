@@ -601,18 +601,25 @@ export function minifyTools(input = {}) {
     }
 
     const after = measure(compressed)
-    if (after.tokens >= before.tokens) {
+    if (after.tokens >= before.tokens || after.bytes > before.bytes) {
       /**
-       * A compression that did not shrink anything is refused. The estimate is
-       * monotone in the length of every run it measures, but truncation
-       * replaces characters with an ellipsis, so at the boundary a shorter
-       * string can cost the same. Keeping the original there means the copy is
-       * never larger than the input.
+       * A compression that did not shrink anything is refused, in EITHER unit.
+       *
+       * The estimate is monotone in the length of every run it measures, but
+       * truncation replaces characters with an ellipsis -- one character, three
+       * bytes -- so one character over the budget a copy can cost fewer tokens
+       * and MORE bytes than the original. Bytes are the exact number this tool
+       * reports, so a copy that grows them is not a compression whatever the
+       * estimate says, and the original is kept. That is what makes "a
+       * compressed copy is never larger than its input" true of every entry
+       * rather than true on average.
        */
       record(collector, {
         ruleId: 'compression-rejected-no-saving',
         pointer: tool.pointer,
-        message: `Compressing "${sanitize(tool.name, 60)}" saved no estimated tokens, so the original definition was kept.`,
+        message: after.bytes > before.bytes
+          ? `Compressing "${sanitize(tool.name, 60)}" would have grown the definition from ${before.bytes} to ${after.bytes} bytes, so the original was kept.`
+          : `Compressing "${sanitize(tool.name, 60)}" saved no estimated tokens, so the original definition was kept.`,
       })
       emitted.push(deepCopy(tool.entry))
       state.totals.kept += 1
@@ -883,13 +890,21 @@ export async function prepareDestination(outputPath, options = {}) {
 /**
  * Write the compressed copy.
  *
+ * Two things matter here, and one of them used to be wrong.
+ *
+ * The copy is serialised COMPACT, which is the form `bytesBefore` and
+ * `bytesAfter` are measured on. Pretty-printing it put a file on disk that was
+ * 71% LARGER than the input while the report announced a byte saving -- the
+ * numbers were exact about a document the tool never wrote. A tool list is sent
+ * to a model as compact JSON anyway; readable indentation is what `jq` is for.
+ *
  * `escapeJsSeparators` turns U+2028 and U+2029 into their JSON escapes so a
  * description carrying one cannot break a JavaScript module that embeds the
- * copy. It changes no JSON value.
+ * copy. It changes no JSON value: the escape and the raw character parse alike.
  */
 export async function writeArtifactFile(destination, document) {
   const path = typeof destination === 'string' ? destination : destination.path
-  const json = escapeJsSeparators(JSON.stringify(document, null, 2))
+  const json = escapeJsSeparators(JSON.stringify(document))
   await writeFile(path, `${json}\n`, 'utf8')
   return path
 }
