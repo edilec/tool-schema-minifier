@@ -22,6 +22,11 @@ breaking change and is recorded here.
 
 ### Fixed
 
+- The U+2028 / U+2029 escaping promised in 0.1.0 is pinned. Removing
+  `escapeJsSeparators` from `writeArtifactFile` left every test green; two cases
+  in `test/artifact.test.mjs` now assert that no raw separator byte reaches the
+  file, that its JSON escape does, and that the description still parses back
+  identical.
 - The written copy can no longer be larger than the input while the report
   announces a saving. `bytesBefore` / `bytesAfter` were measured on the compact
   serialisation and the file was written pretty-printed, so a reported 182 ->

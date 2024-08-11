@@ -115,3 +115,41 @@ test('a compression that would grow the bytes is refused and the original kept',
   const written = JSON.parse(await readFile(out, 'utf8'))
   assert.deepEqual(written.tools[0], document.tools[0], 'the original definition is kept verbatim')
 })
+
+/**
+ * U+2028 and U+2029 are escaped on the way into the file.
+ *
+ * They are ordinary characters to JSON and LINE TERMINATORS to ECMAScript, and
+ * `JSON.stringify` leaves them raw. A minified tool list is exactly the kind of
+ * artifact that gets pasted into a JavaScript module, where one of these breaks
+ * the module at load. The CHANGELOG has promised this since 0.1.0 and nothing
+ * tested it: the escaping could be deleted and all 211 tests stayed green.
+ *
+ * The description below is protected -- it says "delete" -- so it is copied byte
+ * for byte and the separator really does reach the artifact. That is the case
+ * where the escaping matters: an unprotected description has its whitespace
+ * collapsed, and these two characters are whitespace to a JavaScript regex.
+ */
+for (const [name, code] of [['U+2028', 0x2028], ['U+2029', 0x2029]]) {
+  test(`${name} in a protected description is escaped in the written copy`, async () => {
+    const separator = String.fromCharCode(code)
+    const description = `Permanently delete a record.${separator}Ask a person first.`
+    const input = await writeDocument({
+      schemaVersion: '1',
+      tools: [{ name: 'remove', description, inputSchema: { type: 'object', properties: {} } }],
+    })
+    const out = join(await scratch(), `separator-${code.toString(16)}.json`)
+    const { code: exit } = await runCli(['minify', '--tools', input, '--out', out])
+    assert.equal(exit, 0)
+
+    const bytes = await readFile(out)
+    // The raw character, as UTF-8, must not be in the file...
+    const raw = Buffer.from(separator, 'utf8')
+    assert.equal(bytes.includes(raw), false, `a raw ${name} reached the artifact`)
+    // ...and its JSON escape must be, spelled out rather than interpreted.
+    const text = bytes.toString('utf8')
+    assert.ok(text.includes(`\\u${code.toString(16)}`), text)
+    // Escaping changes no JSON value: the description parses back identical.
+    assert.equal(JSON.parse(text).tools[0].description, description)
+  })
+}
