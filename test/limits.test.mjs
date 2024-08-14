@@ -7,7 +7,7 @@ import test, { after } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
-import { DEFAULT_LIMITS, minifyTools, validateLimits } from '../src/index.mjs'
+import { DEFAULT_LIMITS, LIMIT_CEILINGS, minifyTools, validateLimits } from '../src/index.mjs'
 
 const execFileAsync = promisify(execFile)
 const projectDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -198,4 +198,80 @@ test('--protect-tool is deliberately repeatable', async () => {
   const path = await writeJson(DOCUMENT)
   const { code } = await runCli(['minify', '--tools', path, '--protect-tool', 'act', '--protect-tool', 'other'])
   assert.equal(code, 0)
+})
+
+/**
+ * `--max-depth` has a ceiling, because the comparison recurses.
+ *
+ * `measureShape` walks a document with an explicit stack, but `deepCopy`,
+ * `minifySchema` and `compareSchemas` recurse, so the depth budget is the only
+ * thing between a deep document and a stack overflow. Raised past what the
+ * stack carries -- which the tool's own suggestion text invited -- the process
+ * died with a bare `RangeError: Maximum call stack size exceeded`, exit 2 and
+ * NOTHING on stdout: no report, and no name for the document that caused it.
+ *
+ * All three cases matter together. Without the last one the ceiling could be 1
+ * and the tool would be useless; without the first two it is not a ceiling.
+ */
+/**
+ * A deeply nested document as TEXT.
+ *
+ * Built by concatenation rather than by `JSON.stringify`, which recurses too
+ * and overflows the stack on the way in -- which is the same failure this
+ * ceiling exists to prevent, from the other side.
+ */
+function deepDocumentText(levels) {
+  const nest = `${'['.repeat(levels)}1${']'.repeat(levels)}`
+  return `{"schemaVersion":"1","tools":[{"name":"deep","description":"A deep tool.",`
+    + `"inputSchema":{"type":"object","properties":{},"x-deep":${nest}}}]}`
+}
+
+function nestedSchema(levels) {
+  let node = { type: 'string', description: 'x' }
+  for (let index = 0; index < levels; index += 1) node = { type: 'object', properties: { p: node } }
+  return { schemaVersion: '1', tools: [{ name: 'deep', description: 'A deep tool.', inputSchema: node }] }
+}
+
+test('a --max-depth past the supported maximum is a configuration error, not a crash', async () => {
+  const path = await writeJson(deepDocumentText(4000))
+  const { code, stdout, stderr } = await runCli(['minify', '--tools', path, '--max-depth', '200000', '--max-nodes', '200000'])
+  assert.equal(code, 2)
+  assert.equal(stdout, '', 'a configuration error reports nothing, and a crash reports nothing either')
+  assert.match(stderr, /--max-depth requires an integer of at most 1000/)
+  assert.doesNotMatch(stderr, /call stack/)
+})
+
+test('the same ceiling is enforced for a library caller and for --config', async () => {
+  assert.throws(
+    () => validateLimits({ maxDepth: LIMIT_CEILINGS.maxDepth + 1 }),
+    /must be an integer of at most 1000/,
+  )
+  assert.deepEqual(validateLimits({ maxDepth: LIMIT_CEILINGS.maxDepth }).maxDepth, LIMIT_CEILINGS.maxDepth)
+
+  const config = await writeJson({ limits: { maxDepth: 200000 } })
+  const { code, stdout, stderr } = await runCli(['minify', '--tools', await writeJson(nestedSchema(2)), '--config', config])
+  assert.equal(code, 2)
+  assert.equal(stdout, '')
+  assert.match(stderr, /--config is not usable: Limit "maxDepth" must be an integer of at most 1000/)
+})
+
+test('a document deeper than the ceiling is an incomplete report, naming the limit', async () => {
+  const path = await writeJson(deepDocumentText(4000))
+  const { code, stdout } = await runCli(['minify', '--tools', path, '--max-depth', '1000', '--max-nodes', '200000'])
+  assert.equal(code, 2)
+  const report = JSON.parse(stdout)
+  assert.equal(report.status, 'incomplete')
+  const finding = report.findings.find((row) => row.ruleId === 'tools-too-deep')
+  assert.ok(finding !== undefined, JSON.stringify(report.findings))
+  assert.match(finding.message, /maxDepth limit of 1000/)
+  assert.match(finding.suggestion, /supported maximum of 1000/)
+})
+
+test('a document nesting close to the ceiling is still compressed', async () => {
+  // 480 schema levels is a document nesting 964 deep: the ceiling is a real
+  // budget rather than a refusal dressed up as one.
+  const path = await writeJson(nestedSchema(480))
+  const { code, stdout } = await runCli(['minify', '--tools', path, '--max-depth', '1000', '--max-nodes', '200000'])
+  assert.equal(code, 0, stdout)
+  assert.equal(JSON.parse(stdout).status, 'pass')
 })

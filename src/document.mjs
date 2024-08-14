@@ -35,6 +35,27 @@ const LIMIT_FLOORS = Object.freeze({
 })
 
 /**
+ * The deepest document this tool can actually walk.
+ *
+ * `measureShape` here uses an explicit stack, but the compressor and the
+ * equivalence comparison recurse, so `--max-depth` is the only thing between a
+ * deep document and a stack overflow. Raised past what the stack can carry --
+ * which the tool's own suggestion text invites, "raise --max-depth
+ * deliberately" -- the process died with a bare `RangeError: Maximum call stack
+ * size exceeded`, exit 2 and NOTHING on stdout: an input failure wearing the
+ * shape of a configuration failure, with no report naming the document.
+ *
+ * So the depth budget has a ceiling, and asking for more is a configuration
+ * error the operator can read. Measured on this platform, nesting 1000 deep is
+ * walked comfortably and around 4000 is where the stack gives out; the ceiling
+ * keeps a margin of about four, because a stack frame is not the same size on
+ * every build. A document deeper than the ceiling is `tools-too-deep`, which is
+ * an `incomplete` report on stdout naming the limit -- a diagnosis rather than
+ * a crash.
+ */
+export const LIMIT_CEILINGS = Object.freeze({ maxDepth: 1000 })
+
+/**
  * Validate limit overrides, or throw.
  *
  * An unknown key throws rather than being ignored: a one-character typo in a
@@ -50,6 +71,12 @@ export function validateLimits(overrides = {}) {
     const value = overrides[key]
     if (!Number.isInteger(value) || value < LIMIT_FLOORS[key]) {
       throw new TypeError(`Limit "${key}" must be an integer of at least ${LIMIT_FLOORS[key]}`)
+    }
+    if (Object.hasOwn(LIMIT_CEILINGS, key) && value > LIMIT_CEILINGS[key]) {
+      throw new TypeError(
+        `Limit "${key}" must be an integer of at most ${LIMIT_CEILINGS[key]}: past that this tool `
+        + 'cannot walk the document without exhausting the stack, and a crash is not a report.',
+      )
     }
     limits[key] = value
   }
@@ -133,7 +160,7 @@ export function readDocument(bytes, limits, subject) {
       ok: false,
       ruleId: `${subject}-too-deep`,
       message: `The ${subject} document nests deeper than the maxDepth limit of ${limits.maxDepth}; it was not read.`,
-      suggestion: 'Raise --max-depth deliberately, or flatten the schema.',
+      suggestion: `Raise --max-depth deliberately, up to the supported maximum of ${LIMIT_CEILINGS.maxDepth}, or flatten the schema.`,
     }
   }
   if (shape.overNodes) {

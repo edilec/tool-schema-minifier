@@ -22,6 +22,15 @@ breaking change and is recorded here.
 
 ### Fixed
 
+- A raised `--max-depth` no longer crashes the process. `deepCopy`,
+  `minifySchema` and `compareSchemas` recurse, so the depth budget was the only
+  thing between a deep document and a stack overflow -- and the tool's own
+  suggestion text invited raising it. `minify --max-depth 200000` on a deeply
+  nested document died with a bare `RangeError: Maximum call stack size
+  exceeded`, exit 2 and nothing on stdout. `--max-depth` now has a documented
+  ceiling of 1000 (measured: 1000 is walked comfortably, around 4000 exhausts
+  the stack), asking for more is a configuration error naming the maximum, and a
+  document deeper than the budget is `tools-too-deep` on stdout as before.
 - The U+2028 / U+2029 escaping promised in 0.1.0 is pinned. Removing
   `escapeJsSeparators` from `writeArtifactFile` left every test green; two cases
   in `test/artifact.test.mjs` now assert that no raw separator byte reaches the

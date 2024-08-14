@@ -4,6 +4,7 @@ import { isAbsolute, relative, resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
 
 import {
+  LIMIT_CEILINGS,
   formatReport,
   minifyToolFile,
   prepareDestination,
@@ -60,7 +61,8 @@ Options:
   --max-bytes N                Maximum document size (default 4194304)
   --max-tools N                Maximum declared tools (default 500)
   --max-nodes N                Maximum objects and arrays in a document (default 50000)
-  --max-depth N                Maximum document nesting depth (default 32)
+  --max-depth N                Maximum document nesting depth (default 32,
+                               highest accepted 1000)
   --max-description-chars N    Description budget in characters (default 240)
   --max-millis N               Time budget in milliseconds (default 10000)
   -h, --help                   Show this help
@@ -153,11 +155,20 @@ function parseArguments(argv) {
     } else if (LIMIT_FLAGS.has(argument)) {
       once(argument)
       const raw = takeValue(argument)
+      const name = LIMIT_FLAGS.get(argument)
       const floor = argument === '--max-millis' ? 0 : argument === '--max-description-chars' ? 8 : 1
       if (!/^\d+$/.test(raw) || Number(raw) < floor) {
         throw new Error(`${argument} requires an integer of at least ${floor}`)
       }
-      options.limits[LIMIT_FLAGS.get(argument)] = Number(raw)
+      // A ceiling is a documented limit like any other. --max-depth has one
+      // because the comparison recurses: raised past what the stack carries,
+      // the process died with a bare "Maximum call stack size exceeded" and no
+      // report at all, which is a crash wearing the shape of a diagnosis.
+      const ceiling = Object.hasOwn(LIMIT_CEILINGS, name) ? LIMIT_CEILINGS[name] : null
+      if (ceiling !== null && Number(raw) > ceiling) {
+        throw new Error(`${argument} requires an integer of at most ${ceiling}; past that this tool cannot walk the document without exhausting the stack`)
+      }
+      options.limits[name] = Number(raw)
     } else {
       throw new Error(`Unknown option "${argument}"`)
     }

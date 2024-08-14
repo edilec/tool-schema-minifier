@@ -213,13 +213,21 @@ the run is `incomplete`.
 | `--max-bytes` | 4194304 | the document |
 | `--max-tools` | 500 | the document |
 | `--max-nodes` | 50000 | the document |
-| `--max-depth` | 32 | the document |
+| `--max-depth` | 32 | the document; the highest value accepted is 1000 |
 | `--max-description-chars` | 240 | nothing; it is the description budget |
 | `--max-millis` | 10000 | the tools not yet reached |
 
 An unknown limit name, an unknown option, an unknown configuration key and a
 repeated flag are all refused rather than ignored: a typo that falls back to a
 default is a real failure reported as a green run.
+
+`--max-depth` also has a ceiling of 1000, because the compressor and the
+equivalence comparison recurse. Raised past what the stack can carry, the
+process died with a bare `Maximum call stack size exceeded` and nothing on
+stdout -- an input failure wearing the shape of a configuration failure. Asking
+for more than 1000 is now a configuration error you can read, and a document
+deeper than the budget is `tools-too-deep`: an `incomplete` report naming the
+limit.
 
 ## Non-goals
 

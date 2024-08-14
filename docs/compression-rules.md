@@ -40,7 +40,7 @@ through a real entry point.
 | `tools-not-json` | error | yes | The document is not valid JSON. The detail never reproduces the document. |
 | `tools-malformed` | error | yes | The document is not an object with a `tools` array. |
 | `tools-too-large` | error | yes | Over `--max-bytes`. The document is refused whole, never truncated. |
-| `tools-too-deep` | error | yes | Nests deeper than `--max-depth`. |
+| `tools-too-deep` | error | yes | Nests deeper than `--max-depth`, whose highest accepted value is 1000: the comparison recurses, so past that the stack gives out and a crash is not a report. |
 | `tools-too-many-nodes` | error | yes | More objects and arrays than `--max-nodes`. |
 | `candidate-unreadable` | error | yes | The compressed copy could not be opened (`verify`). |
 | `candidate-not-utf8` | error | yes | The copy is not valid UTF-8. |

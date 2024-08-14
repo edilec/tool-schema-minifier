@@ -32,6 +32,7 @@ import { DestinationError, assertWritableDestination } from './destination.mjs'
 import {
   DEFAULT_LIMITS,
   DOCUMENT_SCHEMA_VERSION,
+  LIMIT_CEILINGS,
   normalizeDocument,
   readDocument,
   validateLimits,
@@ -66,7 +67,7 @@ import {
 export const TOOL_ID = 'tool-schema-minifier'
 export const REPORT_SCHEMA_VERSION = '1'
 
-export { DEFAULT_LIMITS, DOCUMENT_SCHEMA_VERSION, validateLimits }
+export { DEFAULT_LIMITS, DOCUMENT_SCHEMA_VERSION, LIMIT_CEILINGS, validateLimits }
 export { DestinationError, assertWritableDestination } from './destination.mjs'
 export { APPROVAL_MARKERS, isApprovalDescription } from './schema.mjs'
 export { estimateTokens } from './tokens.mjs'
