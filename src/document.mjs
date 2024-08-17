@@ -11,7 +11,7 @@
  * about nothing.
  */
 
-import { decodeUtf8, parseFailureDetail, sanitize } from './text.mjs'
+import { NAME_LIMIT, decodeUtf8, parseFailureDetail, sanitize } from './text.mjs'
 import { isRecord, ownKeys } from './schema.mjs'
 
 export const DOCUMENT_SCHEMA_VERSION = '1'
@@ -262,7 +262,7 @@ export function normalizeDocument(parsed, limits, subject, record) {
       record({
         ruleId: 'tool-name-duplicated',
         pointer: `${pointer}/name`,
-        message: `Two tools are called "${sanitize(name, 60)}"; a duplicate name makes the pair impossible to tell apart, so neither entry was compressed.`,
+        message: `Two tools are called "${sanitize(name, NAME_LIMIT)}"; a duplicate name makes the pair impossible to tell apart, so neither entry was compressed.`,
         suggestion: 'Give every tool a distinct name.',
       })
       return
@@ -272,7 +272,7 @@ export function normalizeDocument(parsed, limits, subject, record) {
       record({
         ruleId: 'tool-schema-missing',
         pointer: `${pointer}/inputSchema`,
-        message: `The tool "${sanitize(name, 60)}" has no inputSchema object, so nothing about its parameters was read.`,
+        message: `The tool "${sanitize(name, NAME_LIMIT)}" has no inputSchema object, so nothing about its parameters was read.`,
         suggestion: 'Declare an inputSchema object, even if it is { "type": "object" }.',
       })
       return

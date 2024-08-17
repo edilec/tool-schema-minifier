@@ -85,9 +85,19 @@ const CONTROL = new RegExp(
   'g',
 )
 
-/** Bounds on what any one untrusted string may contribute to output. */
+/**
+ * Bounds on what any one untrusted string may contribute to output.
+ *
+ * `NAME_LIMIT` is the one that is not arbitrary: `src/document.mjs` accepts a
+ * tool name of up to 128 characters, so a message rendering one at 60 turned
+ * two legal names that differ in their last character into byte-identical text.
+ * A bound below what the tool accepts as legal is a silent truncation, and this
+ * one sits at the legal maximum so a name that was read is a name that is
+ * shown whole. It fits inside MESSAGE_LIMIT with the sentence around it.
+ */
 export const EXCERPT_LIMIT = 200
 export const MESSAGE_LIMIT = 400
+export const NAME_LIMIT = 128
 export const LABEL_LIMIT = 120
 export const POINTER_LIMIT = 300
 

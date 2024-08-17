@@ -125,3 +125,41 @@ test('the written copy escapes the separators that would break a JavaScript cons
   // protection; the escaping happens where the copy is serialised.
   assert.ok(copy.tools[0].description.includes(separator))
 })
+
+/**
+ * A bound below what the tool accepts as legal is a silent truncation.
+ *
+ * `src/document.mjs` accepts a tool name of up to 128 characters. Messages
+ * rendered one at 60, so two legal names differing only in their last character
+ * produced byte-identical text and the pointer was the only thing telling the
+ * two findings apart. The name is now rendered at the legal maximum.
+ */
+test('two legal tool names that differ are named differently in the report', () => {
+  const stem = `tool_${'n'.repeat(122)}`
+  const first = `${stem}a`
+  const second = `${stem}b`
+  assert.equal(first.length, 128)
+  assert.notEqual(first, second)
+
+  const original = {
+    schemaVersion: '1',
+    tools: [
+      { name: first, description: 'One.', inputSchema: { type: 'object', properties: {} } },
+      { name: second, description: 'Two.', inputSchema: { type: 'object', properties: {} } },
+    ],
+  }
+  const report = verifyCandidate({
+    bytes: encode(original),
+    candidateBytes: encode({ schemaVersion: '1', tools: [] }),
+    source: 'tools.json',
+  }).report
+
+  const messages = report.findings
+    .filter((finding) => finding.ruleId === 'tool-missing-from-candidate')
+    .map((finding) => finding.message)
+  assert.equal(messages.length, 2)
+  assert.notEqual(messages[0], messages[1])
+  assert.ok(messages.some((message) => message.includes(first)), messages[0])
+  assert.ok(messages.some((message) => message.includes(second)), messages[1])
+  for (const message of messages) assert.ok(message.length <= 400, `message is ${message.length} characters`)
+})

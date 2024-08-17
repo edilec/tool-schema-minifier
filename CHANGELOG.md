@@ -22,6 +22,11 @@ breaking change and is recorded here.
 
 ### Fixed
 
+- A tool name in a finding message is rendered at the 128-character maximum the
+  document reader accepts, not at 60. Two legal names differing only in their
+  last character produced byte-identical messages, leaving the JSON pointer as
+  the only thing telling the findings apart -- a bound below what the tool
+  accepts as legal is a silent truncation.
 - A raised `--max-depth` no longer crashes the process. `deepCopy`,
   `minifySchema` and `compareSchemas` recurse, so the depth budget was the only
   thing between a deep document and a stack overflow -- and the tool's own

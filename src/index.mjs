@@ -56,6 +56,7 @@ import {
   EXCERPT_LIMIT,
   LABEL_LIMIT,
   MESSAGE_LIMIT,
+  NAME_LIMIT,
   POINTER_LIMIT,
   byCodeUnit,
   decodeUtf8,
@@ -591,7 +592,7 @@ export function minifyTools(input = {}) {
       record(collector, {
         ruleId: 'equivalence-not-proven',
         pointer: tool.pointer,
-        message: `The compressed copy of "${sanitize(tool.name, 60)}" is not equivalent to the original, so the original was kept.`,
+        message: `The compressed copy of "${sanitize(tool.name, NAME_LIMIT)}" is not equivalent to the original, so the original was kept.`,
         suggestion: 'Report this: a compressed copy that fails this tool own check is a defect in the compressor, not in the document.',
       })
       emitted.push(deepCopy(tool.entry))
@@ -619,8 +620,8 @@ export function minifyTools(input = {}) {
         ruleId: 'compression-rejected-no-saving',
         pointer: tool.pointer,
         message: after.bytes > before.bytes
-          ? `Compressing "${sanitize(tool.name, 60)}" would have grown the definition from ${before.bytes} to ${after.bytes} bytes, so the original was kept.`
-          : `Compressing "${sanitize(tool.name, 60)}" saved no estimated tokens, so the original definition was kept.`,
+          ? `Compressing "${sanitize(tool.name, NAME_LIMIT)}" would have grown the definition from ${before.bytes} to ${after.bytes} bytes, so the original was kept.`
+          : `Compressing "${sanitize(tool.name, NAME_LIMIT)}" saved no estimated tokens, so the original definition was kept.`,
       })
       emitted.push(deepCopy(tool.entry))
       state.totals.kept += 1
@@ -718,7 +719,7 @@ export function verifyCandidate(input = {}) {
       record(collector, {
         ruleId: 'tool-missing-from-candidate',
         pointer: tool.pointer,
-        message: `The tool "${sanitize(tool.name, 60)}" is missing from the compressed copy.`,
+        message: `The tool "${sanitize(tool.name, NAME_LIMIT)}" is missing from the compressed copy.`,
         suggestion: 'Restore the tool; a compressed copy drops annotations, not tools.',
       })
       state.perTool.push({ name: tool.name, compressed: false, reason: 'missing', tokensBefore: measure(tool.entry).tokens, tokensAfter: 0 })
@@ -737,7 +738,7 @@ export function verifyCandidate(input = {}) {
       record(collector, {
         ruleId: 'equivalence-not-proven',
         pointer: tool.pointer,
-        message: `The compressed copy of "${sanitize(tool.name, 60)}" is not equivalent to the original.`,
+        message: `The compressed copy of "${sanitize(tool.name, NAME_LIMIT)}" is not equivalent to the original.`,
         suggestion: 'Fix the copy, or regenerate it with this tool minify command.',
       })
     }
@@ -756,7 +757,7 @@ export function verifyCandidate(input = {}) {
     record(collector, {
       ruleId: 'tool-added-in-candidate',
       pointer: extra.pointer,
-      message: `The compressed copy declares "${sanitize(extra.name, 60)}", which the original does not.`,
+      message: `The compressed copy declares "${sanitize(extra.name, NAME_LIMIT)}", which the original does not.`,
       suggestion: 'Remove it; a compressed copy adds nothing.',
     })
   }
