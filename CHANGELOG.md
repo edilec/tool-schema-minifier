@@ -22,6 +22,14 @@ breaking change and is recorded here.
 
 ### Fixed
 
+- Severity for the gate rules is pinned by what a run emits rather than by a
+  hand-written expected value. `equivalence-not-proven` fails a run on its own,
+  so downgrading `required-changed` alone left the exit code at 1 and only an
+  `assert.equal(severity, 'error')` noticed -- a declaration comparing itself to
+  a declaration, which is the pattern the contract says is not a pin. Every
+  exit-1 case now also asserts that the run counted every finding it made as an
+  error. Measured: each of the twenty gate rules flipped to `warning` on its own
+  now turns `test/severity-behaviour.test.mjs` red.
 - A tool name in a finding message is rendered at the 128-character maximum the
   document reader accepts, not at 60. Two legal names differing only in their
   last character produced byte-identical messages, leaving the JSON pointer as

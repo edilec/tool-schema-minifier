@@ -206,6 +206,28 @@ for (const [ruleId, expectedExit, expectedStatus, buildArgs] of CASES) {
     )
     assert.equal(report.status, expectedStatus)
     assert.equal(code, expectedExit)
+    if (expectedExit === 1) {
+      /**
+       * Severity, without a second copy of the severity table.
+       *
+       * `status` and the exit code cannot separate one gate rule from another:
+       * `equivalence-not-proven` accompanies every difference and carries the
+       * run on its own, so downgrading `required-changed` alone leaves the exit
+       * code at 1 and only a hand-written `assert.equal(severity, 'error')` --
+       * a declaration comparing itself to a declaration -- notices.
+       *
+       * What is observable instead is the count the report emits: a run that
+       * established a difference calls every finding it made an error. One rule
+       * flipped to `warning` moves a finding out of `summary.errors` and into
+       * `summary.warnings`, and no edit to the table changes that arithmetic.
+       */
+      assert.equal(
+        report.summary.errors, report.findings.length,
+        `a run that established a difference counts every finding as an error: ${JSON.stringify(report.summary)}`,
+      )
+      assert.equal(report.summary.warnings, 0)
+      assert.equal(report.summary.info, 0)
+    }
     if (expectedExit === 1 && !WHOLE_LIST_RULES.has(ruleId)) {
       // Severity-independent: a tool is counted equivalent only when its
       // comparison found nothing. This assertion survives an edit to the

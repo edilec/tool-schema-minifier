@@ -18,6 +18,16 @@ therefore drives every rule below through the real command line over a real
 document and asserts the observable outcome -- `status` and the exit code --
 because an exit code cannot be edited.
 
+For the gate rules the exit code is not enough on its own, and saying so is part
+of the guard. `equivalence-not-proven` accompanies every difference and fails
+the run by itself, so downgrading one of the others leaves `status` and the exit
+code exactly as they were. What does move is the count the report emits: a run
+that established a difference calls every finding it made an error, so a rule
+flipped to `warning` moves a finding out of `summary.errors` and into
+`summary.warnings`. That count is asserted for every one of those cases, and it
+is arithmetic over what the run emitted rather than a second copy of this
+table.
+
 | Class | Severity | Status | Exit |
 | --- | --- | --- | ---: |
 | evidence the run did not obtain | `error`, plus one `warning` | `incomplete` | 2 |
