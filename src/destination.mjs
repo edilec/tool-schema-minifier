@@ -24,8 +24,12 @@
  *    It is the same file. Only device plus inode sees that.
  *
  * This command line declares no root -- a person may legitimately write the
- * copy anywhere they can write -- so it passes `root: null` and the first and
- * third holes are what refuse a destination in practice. The `root` argument is
+ * copy anywhere they can write, and inventing a root would refuse legitimate
+ * absolute destinations -- so it passes `root: null`, and the first and third
+ * holes are what refuse a destination in practice. Passing `null` is a real
+ * answer rather than a shortcut, and it has a consequence the help text states:
+ * a symbolically linked PARENT directory is followed, unless what it leads to
+ * is an input, which check 3 still catches. The `root` argument is
  * kept for a library caller that does have a root to confine the copy to, and
  * `test/destination.test.mjs` exercises every row of the table above including
  * both root cases, plus the destinations that must still be ALLOWED: a guard

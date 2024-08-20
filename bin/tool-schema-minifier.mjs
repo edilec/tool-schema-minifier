@@ -48,11 +48,14 @@ Options:
   --out FILE                   Write the compressed copy here (minify only),
                                as compact JSON. Written only when the run
                                passes. The destination's directory is created if
-                               it is missing. A symbolic link, a parent that
-                               resolves elsewhere, anything that is not a
-                               regular file, and any spelling of an input
-                               document -- including a hard link to it -- are
-                               refused before anything is opened.
+                               it is missing. A symbolic link AT the
+                               destination, anything that is not a regular file,
+                               and any spelling of an input document --
+                               including a hard link to it -- are refused before
+                               anything is opened. No root is declared, so the
+                               copy may go anywhere you can write and a
+                               symbolically linked parent directory is
+                               followed.
   --drop-annotations           Also remove title/$comment/example/examples
   --protect-tool NAME          Treat every description in this tool as
                                approval-governing. May be repeated.

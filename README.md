@@ -242,12 +242,14 @@ This tool does **not**:
   ones in the table above;
 - resolve `$ref`, fetch a remote schema, or contact a network of any kind;
 - edit the input document. It is read-only, and the copy goes to a separate
-  destination that is checked before anything is opened: a symbolic link at the
-  destination, a parent directory that resolves somewhere else, anything that is
-  not a regular file, and any spelling of an input -- including a hard link to
-  it -- are each refused, and a refused destination is a configuration error
-  (exit `2`, empty stdout). The three holes are independent, so each has its own
-  check and its own case in `test/destination.test.mjs`;
+  destination that is checked before anything is opened: a symbolic link **at**
+  the destination, anything that is not a regular file, and any spelling of an
+  input -- including a hard link to it, which shares no path text with it -- are
+  each refused, and a refused destination is a configuration error (exit `2`,
+  empty stdout). No root is declared, because the copy may legitimately go
+  anywhere you can write: a symbolically linked *parent* directory is therefore
+  followed, and the guard's root check is exercised by
+  `test/destination.test.mjs` for a library caller that does declare one;
 - decide whether a tool is safe to expose. It reports what changed and what did
   not.
 

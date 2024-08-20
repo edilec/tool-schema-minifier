@@ -80,11 +80,14 @@ breaking change and is recorded here.
 - `--out` no longer writes through a **symbolic link at the destination**. The
   link was resolved and followed, so a run could destroy an unrelated file and
   exit `0` reporting `compressed copy written`. The destination is now inspected
-  with `lstat` and refused on sight, before anything is opened, and the parent
-  directory is resolved rather than compared as text. A hard link to an input
-  was already refused and still is. `test/destination.test.mjs` has a case per
-  hole and a case per legitimate destination, and each check is proved to bite
-  by removing it.
+  with `lstat` and refused on sight, before anything is opened. A hard link to an
+  input was already refused and still is, by device and inode. No root is
+  declared -- the copy may legitimately go anywhere the caller can write -- so a
+  symbolically linked parent directory is followed unless it leads back to an
+  input, and the help text says so; the guard's root check is exercised for a
+  library caller that does declare one. `test/destination.test.mjs` has a case
+  per hole and a case per legitimate destination, and each check is proved to
+  bite by removing it.
 - A missing input document no longer reports a broken `--out`. The destination
   check stat'ed the input, so `minify --tools absent.json --out copy.json`
   exited `2` with an **empty stdout** blaming `--out`; the contract requires an
