@@ -868,10 +868,12 @@ export async function readConfigFile(path) {
  * The destination's directory is created first, because a copy written into a
  * directory this run made is ordinary and refusing it would only push people
  * into `mkdir && run`. The guard then runs over the real destination: a
- * symbolic link at it, a parent that resolves somewhere else, a destination
- * that is not a regular file, and a hard link to an input are each refused
- * before anything is opened. See `src/destination.mjs` for why one check does
- * not cover the others.
+ * symbolic link AT it, a destination that is not a regular file, and a hard
+ * link to an input are each refused before anything is opened. See
+ * `src/destination.mjs` for why one check does not cover the others -- and note
+ * that the command line passes no root, so a symbolically linked PARENT
+ * directory is followed unless it leads back to an input. Documenting a
+ * confinement this code does not perform would be worse than saying nothing.
  *
  * A refused destination is a configuration error: exit 2 with an empty stdout.
  * A missing INPUT is not refused here -- that is a fact about the input, and it

@@ -116,9 +116,11 @@ test('the compressed copy is written only for a run that passes', async () => {
 
 /**
  * Where the copy may be written is pinned in `test/destination.test.mjs`: a
- * symbolic link at the destination, a parent that resolves elsewhere, a hard
- * link to an input and a destination that is not a regular file each have a
- * case there, as do the destinations that must still be allowed.
+ * symbolic link at the destination, a hard link to an input and a destination
+ * that is not a regular file each have a case there, as do the destinations
+ * that must still be allowed. A parent that resolves elsewhere has a case there
+ * too, against a root -- but this command line declares none, so on the command
+ * line a linked parent is followed unless it leads back to an input.
  */
 
 test('two byte-identical documents verify as equivalent', async () => {
