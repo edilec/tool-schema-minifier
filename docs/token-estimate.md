@@ -46,8 +46,18 @@ the two characters it replaced. So the compressor compares the whole tool before
 and after, and a copy that did not lower the estimate is refused with
 `compression-rejected-no-saving` and the original is kept.
 
-The consequence worth stating plainly: **a compressed copy is never larger than
-its input**, at any budget.
+The consequence worth stating plainly: **no entry in a compressed copy is larger
+than the entry it replaces**, in estimated tokens or in exact bytes, at any
+budget.
+
+It is stated per ENTRY because the file is not the entries. The copy always
+carries the document envelope `{"schemaVersion":"1","tools":[...]}`, so a
+document that declared no `schemaVersion` gets one, and where the compression
+saves less than the envelope costs the file on disk is larger than the file it
+was built from -- measured, a 176-byte input with nothing to collapse produced a
+184-byte copy, with `bytesBefore` and `bytesAfter` correctly equal and no saving
+claimed. The guarantee is about what happened to the tool definitions, which is
+what `bytesBefore` and `bytesAfter` count.
 
 ## Reproducibility
 
